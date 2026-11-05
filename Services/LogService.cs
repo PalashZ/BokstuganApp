@@ -36,4 +36,31 @@ public class LogService
 
         File.WriteAllText(filePath, json);
     }
+    // Hämtar de senaste loggposterna, med den nyaste först.
+public List<LogEntry> GetRecent(int count)
+{
+    if (count < 0)
+    {
+        throw new ArgumentOutOfRangeException(
+            nameof(count), "Antalet får inte vara negativt.");
+    }
+
+    string filePath = "log.json";
+
+    if (count == 0 || !File.Exists(filePath))
+    {
+        return new List<LogEntry>();
+    }
+
+    string json = File.ReadAllText(filePath);
+
+    List<LogEntry> entries =
+        JsonSerializer.Deserialize<List<LogEntry>>(json)
+        ?? throw new JsonException("Loggfilen innehåller ingen lista.");
+
+    return entries
+        .OrderByDescending(entry => entry.Timestamp)
+        .Take(count)
+        .ToList();
+}
 }
