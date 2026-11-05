@@ -2,7 +2,7 @@ using System.Text.Json;
 
 namespace BokstuganApp.Services;
 
-public class LogService
+public class LogService : ILogService
 {
     public void Log(string level, string message)
     {
