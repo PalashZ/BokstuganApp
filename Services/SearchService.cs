@@ -38,4 +38,23 @@ public class SearchService
                 StringComparison.OrdinalIgnoreCase))
             .ToList();
     }
+    // Sorterar titlar enligt svensk alfabetisk ordning.
+public List<Book> SortByTitle(IEnumerable<Book> books)
+{
+    var swedishComparer = StringComparer.Create(
+        System.Globalization.CultureInfo.GetCultureInfo("sv-SE"),
+        ignoreCase: true);
+
+    return books
+        .OrderBy(book => book.Title, swedishComparer)
+        .ToList();
+}
+
+// Sorterar efter utgivningsår, med de äldsta böckerna först.
+public List<Book> SortByYear(IEnumerable<Book> books)
+{
+    return books
+        .OrderBy(book => book.Year)
+        .ToList();
+}
 }
