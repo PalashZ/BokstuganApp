@@ -20,4 +20,22 @@ public class SearchService
                 || book.Author.Contains(searchText, StringComparison.OrdinalIgnoreCase))
             .ToList();
     }
+
+    // Filtrerar på genre utan skillnad på stora och små bokstäver.
+    public List<Book> FilterByGenre(IEnumerable<Book> books, string? genre)
+    {
+        if (string.IsNullOrWhiteSpace(genre))
+        {
+            return books.ToList();
+        }
+
+        string selectedGenre = genre.Trim();
+
+        return books
+            .Where(book => string.Equals(
+                book.Genre,
+                selectedGenre,
+                StringComparison.OrdinalIgnoreCase))
+            .ToList();
+    }
 }
