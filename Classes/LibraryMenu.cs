@@ -2,30 +2,70 @@
 using System.Collections.Generic;
 using System.Text;
 
-// Denna klassen är för själva meny, det som står när du startar applicationen
+// Denna klassen är hur meny funkar för våran program.
+// Denna klassen använder LibraryMenuHelper för att visa meny och ta input från användaren.
 namespace BokstuganApp.Classes
 {
+
+    // Denna klassen är hur meny funkar för våran program.
     public class LibraryMenu
     {
+        private LibraryMenuHelper helper;
 
-        // Vilka alternativer som finns
+        // Konstruktor för LibraryMenu klassen.
+        public LibraryMenu()
+        {
+            helper = new LibraryMenuHelper();
+        }
+
+        // Denna metoden visar meny och tar input från användaren.
+
         public void ShowMenu()
         {
-            Console.WriteLine("Välkommen till Bokstugan!");
-            Console.WriteLine();
+            bool running = true;
 
-            Console.WriteLine("1. Visa mina böcker");
-            Console.WriteLine("2. Visa alla böcker");
-            Console.WriteLine("3. Lämna in bok");
-            Console.WriteLine("4. Sök efter en bok");
-            Console.WriteLine("5. Lämna recensioner");
-            Console.WriteLine("6. Avsluta");
-            Console.WriteLine();
+            helper.ShowWelcomeMessage();
 
-            Console.Write("Välj ett alternativ:");
-            Console.ReadLine();
-           
-             
+            // Loop som körs tills användaren väljer att avsluta.
+            // Denna loop visar menyval och tar input från användaren.
+            while (running)
+            {
+                helper.ShowMenuOptions();
+
+                string choice = helper.GetUserChoice();
+
+                switch(choice)
+                {
+                    case "1":
+                        Console.WriteLine("Visa mina böcker");
+                        break;
+
+                    case "2":
+                        Console.WriteLine("Visa alla böcker");
+                        break;
+
+                    case "3":
+                        Console.WriteLine("Lämna in bok");
+                        break;
+
+                    case "4":
+                        Console.WriteLine("Sök efter bok");
+                        break;
+
+                    case "5":
+                        Console.WriteLine("Lämna recensioner");
+                        break;
+
+                    case "6":
+                        helper.ShowExitMessage();
+                        running = false;
+                        break;
+
+                    default:
+                        Console.WriteLine("Ogiltigt val. Vänligen försök igen!");
+                        break;
+                }
+            }
         }
     }
 }
