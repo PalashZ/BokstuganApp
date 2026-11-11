@@ -5,7 +5,7 @@ using System.Text;
 namespace BokstuganApp.Classes
 {
 
-    // Denna klassen är hur meny funkar för våran program.
+    // Denna klassen är hur meny funkar för våran program
     // Det visar vilka val användaren kan göra och tar input från användaren. Det visar menyn tills användaren väljer att avsluta.
     public class LibraryMenuHelper
     {
