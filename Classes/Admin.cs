@@ -1,4 +1,4 @@
-namespace BokstuganApp.Models;
+namespace BokstuganApp.Classes;
 
 public class Admin : Person
 {
