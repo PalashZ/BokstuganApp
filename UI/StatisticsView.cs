@@ -31,6 +31,8 @@ namespace BokstuganApp.UI
             }
 
             AnsiConsole.Write(chart);
+
+
         }
     }
 }

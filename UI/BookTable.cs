@@ -19,7 +19,6 @@ namespace BokstuganApp.UI
             {
                 ConsoleMessages.Warning("Det finns inga böcker att visa.");
                 return;
-
             }
             // Skapar en tabell med kolumner för titel, författare, genre och år.
             // Använder Markup.Escape för att undvika problem med specialtecken i bokinformationen.
@@ -47,6 +46,8 @@ namespace BokstuganApp.UI
             }
 
             AnsiConsole.Write(table);
+
+
         }
     }
 }

@@ -9,7 +9,6 @@ namespace BokstuganApp.UI
 // Deena klassen hjälper till med att hantera användarens val av roll (användare eller admin) och visar en spinner medan data sparas vid avslutning.
 {
     public enum Role { User, Admin, Exit }
-
     public class StartScreen
     // Denna klassen används för att visa startskärmen och laddningsskärmen i konsolen.
     {
@@ -124,6 +123,8 @@ namespace BokstuganApp.UI
                 AnsiConsole.WriteLine();
 
                 Thread.Sleep(1200);
+
+
             }
         }
 

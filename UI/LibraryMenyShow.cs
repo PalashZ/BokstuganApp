@@ -44,8 +44,9 @@ namespace BokstuganApp.UI
                         break;
                 }
             }
-
             _loadingScreen.ShowShutdown();
+
+
             
         }
     }

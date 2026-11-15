@@ -41,6 +41,8 @@ namespace BokstuganApp.UI
             AnsiConsole.WriteLine();
             Hint("Tryck på valfri knapp för att fortsätta...");
             Console.ReadKey(true);
+
+
         }
     }
 }

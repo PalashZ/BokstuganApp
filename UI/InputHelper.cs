@@ -31,6 +31,8 @@ namespace BokstuganApp.UI
                 .Validate(number => number < min || number > max
                     ? ValidationResult.Error($"[red]Värdet måste vara mellan {min} och {max}.[/]")
                     : ValidationResult.Success()));
+
+
         }
     }
 }
