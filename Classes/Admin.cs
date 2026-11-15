@@ -1,5 +1,5 @@
 namespace BokstuganApp.Classes;
-
+// Representerar en administratör med en administratörskod och en egen välkomsthälsning.
 public class Admin : Person
 {
     public string AdminCode { get; set; } = "";

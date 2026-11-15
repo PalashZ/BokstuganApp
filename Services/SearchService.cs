@@ -1,7 +1,7 @@
 using BokstuganApp.Classes;
 
 namespace BokstuganApp.Services;
-
+// Söker böcker efter titel eller författare, filtrerar på genre och sorterar på titel eller utgivningsår.
 public class SearchService
 {
     // Söker i titel och författare utan skillnad på stora och små bokstäver.

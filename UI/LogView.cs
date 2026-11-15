@@ -2,6 +2,7 @@ using BokstuganApp.Services;
 
 namespace BokstuganApp.UI;
 
+// Visar de senaste loggposterna i konsolen och meddelar om loggen är tom.
 public class LogView
 {
     private readonly LogService _logService;
