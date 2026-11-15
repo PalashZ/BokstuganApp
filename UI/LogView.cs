@@ -3,6 +3,7 @@ using Spectre.Console;
 
 namespace BokstuganApp.UI;
 
+// Visar de senaste loggposterna i konsolen och meddelar om loggen Ã¤r tom.
 public class LogView
 // Denna klassen används för att visa loggposter i konsolen.
 // Den använder LogService för att hämta de senaste loggposterna och Spectre.Console för att skapa en snygg tabell med logginformationen.

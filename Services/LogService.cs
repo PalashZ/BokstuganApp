@@ -1,7 +1,7 @@
 using System.Text.Json;
 
 namespace BokstuganApp.Services;
-
+// Sparar loggposter i log.json och hämtar de senaste med den nyaste först.
 public class LogService : ILogService
 {
     public void Log(string level, string message)
