@@ -13,9 +13,22 @@ namespace BokstuganApp.Classes
         public string ISBN { get; set; }
         public Book(string title, string author, string genre, int year, string isbn)
         {
+            // Kontrollera att bokens titel inte är tom.
+            if (string.IsNullOrWhiteSpace(title))
+            {
+                throw new ArgumentException("Bokens titel får inte vara tom.");
+            }
+
             Title = title;
             Author = author;
             Genre = genre;
+
+            // Kontrollera att utgivningsåret är rimligt.
+            if (year < 0 || year > DateTime.Now.Year)
+            {
+                throw new ArgumentException("Bokens utgivningsår är ogiltigt.");
+            }
+
             Year = year;
             ISBN = isbn;
         }
