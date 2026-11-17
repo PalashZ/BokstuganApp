@@ -7,10 +7,9 @@ namespace BokstuganApp.UI;
 public class LogView
 // Denna klassen används för att visa loggposter i konsolen.
 // Den använder LogService för att hämta de senaste loggposterna och Spectre.Console för att skapa en snygg tabell med logginformationen.
-// Logservice är en tjänst som hanterar loggning i applikationen och lagrar loggposter i minnet.
+// Logservice är en tjänst som hanterar loggning i applikationen och lagrar loggposter i Log.json.
 {
     private readonly LogService _logService;
-
     public LogView(LogService logService)
     {
         _logService = logService;
@@ -53,5 +52,7 @@ public class LogView
         }
 
         AnsiConsole.Write(table);
+
+
     }
 }

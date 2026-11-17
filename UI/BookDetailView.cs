@@ -28,6 +28,8 @@ namespace BokstuganApp.UI
             panel.Border = BoxBorder.Rounded;
             panel.Padding = new Padding(1, 1);
             AnsiConsole.Write(panel);
+
+
         }
     }
 }

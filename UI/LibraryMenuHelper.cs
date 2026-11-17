@@ -43,6 +43,8 @@ namespace BokstuganApp.UI
                     new Book("Art of war", "Szu Tzu", "Facklitteratur", 1910, "90000001" ),
                     new Book("Omgivna av idioter", "Thomas Erikson", "Populärpsykologi", 2014, "90000002"),
                     new Book("The Hungry Game", "Suzanne Collins", "Dystopi", 2008, "90000003")
+
+
                 };
             }
         
