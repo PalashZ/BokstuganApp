@@ -12,7 +12,7 @@ namespace BokstuganApp.UI
     public class StartScreen
     // Denna klassen används för att visa startskärmen och laddningsskärmen i konsolen.
     {
-        public async Task ShowBanner()
+        public void ShowBanner()
         {
             AnsiConsole.Clear();
             AnsiConsole.Write(new FigletText("Bokstugan").Centered().Color(Color.Aqua));
