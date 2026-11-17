@@ -11,6 +11,10 @@ namespace BokstuganApp.Classes
         public string Genre { get; set; }
         public int Year { get; set; }
         public string ISBN { get; set; }
+        public int Id { get; set; }
+        public string Description { get; set; } = string.Empty;
+        public int PageCount { get; set; }
+        public int Copies { get; set; }
         public Book(string title, string author, string genre, int year, string isbn)
         {
             // Kontrollera att bokens titel inte är tom.
