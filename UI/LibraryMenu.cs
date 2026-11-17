@@ -1,4 +1,5 @@
 ﻿using System;
+using BokstuganApp.Services;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -49,9 +50,27 @@ namespace BokstuganApp.UI
 
                         ConsoleMessages.WaitForKey();
                         break;
-
-                    case MenuChoice.ReturnBook:
                     case MenuChoice.Search:
+                    {
+                        Console.Write("Sök på titel eller författare (Enter visar alla): ");
+                        string? searchText = Console.ReadLine();
+
+                        var results = new SearchService().SearchByText(
+                            LibraryMenuHelper.GetDemoBooks(), searchText);
+
+                        if (results.Count == 0)
+                        {
+                            ConsoleMessages.Warning("Inga böcker hittades.");
+                        }
+                        else
+                        {
+                            new BookTable().Show(results);
+                        }
+
+                        ConsoleMessages.WaitForKey();
+                        break;
+                    }
+                    case MenuChoice.ReturnBook:
                     case MenuChoice.Review:
                         ConsoleMessages.Info("Den här funktionen byggs snart!.");
                         ConsoleMessages.WaitForKey();
