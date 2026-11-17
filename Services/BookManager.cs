@@ -20,6 +20,10 @@ namespace BokstuganApp.Services
 
             books.Add(book);
         }
+            public IReadOnlyList<Book> GetAllBooks()
+        {
+            return books.AsReadOnly();
+        }
             public bool RemoveBook(Book book)
         {
             return books.Remove(book);
