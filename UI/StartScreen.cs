@@ -1,4 +1,6 @@
-﻿using Spectre.Console;
+﻿using BokstuganApp.Classes;
+using BokstuganApp.Services;
+using Spectre.Console;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -12,6 +14,13 @@ namespace BokstuganApp.UI
     public class StartScreen
     // Denna klassen används för att visa startskärmen och laddningsskärmen i konsolen.
     {
+        private readonly DataStore<Book> _bookStore = new DataStore<Book>("books.json");
+        private readonly BookManager _bookManager;
+
+        public StartScreen()
+        {
+            _bookManager = new BookManager(_bookStore);
+        }
         public void ShowBanner()
         {
             AnsiConsole.Clear();

@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-
+// Denna klassen representerar en bok i BokstuganApp.
 namespace BokstuganApp.Classes
 {
-    internal class BookStatus
+    public class BookStatus
     {
         // Beskriver om en bok kan lånas just nu.
         public enum Bookstatus

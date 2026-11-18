@@ -32,7 +32,6 @@ namespace BokstuganApp.UI
                         return "Logga ut";
                 }
 
-
             }
         // Skapar en lista med demo-böcker som kan användas för testning.
         // Varje bok har titel, författare, genre, år och ISBN.

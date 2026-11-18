@@ -1,4 +1,5 @@
 ﻿using BokstuganApp.Classes;
+using BokstuganApp.Services;
 using Spectre.Console;
 using System;
 using System.Collections.Generic;
@@ -15,6 +16,14 @@ namespace BokstuganApp.UI
         // Denna klassen använder sig av readonly fält för att skapa instanser av StartScreen och LoadingScreen som används för att visa start- och stängningsskärmarna.
         private readonly StartScreen _startScreen = new StartScreen();
         private readonly LoadingScreen _loadingScreen = new LoadingScreen();
+        private readonly DataStore<Book> _bookStore = new DataStore<Book>("books.json");
+        private readonly BookManager _bookManager;
+
+        public LibraryMenyShow()
+        {
+            _bookManager = new BookManager(_bookStore);
+        }
+
         public void Run()
         // Denna metoden kör huvudmenyn för BokstuganApp. Den visar startskärmen, laddningsskärmen och hanterar användarens val av roll (användare eller admin).
         {
@@ -31,12 +40,11 @@ namespace BokstuganApp.UI
                 switch(_startScreen.SelectRole())
                 {
                     case Role.User:
-                        new LibraryMenu().ShowMenu();
+                        new LibraryMenu(_bookManager).ShowMenu();
                         break;
 
                     case Role.Admin:
-                        ConsoleMessages.Info("Adminmenyn byggs snart.");
-                        ConsoleMessages.WaitForKey();
+                        new AdminMenu(_bookManager).ShowMenu();
                         break;
 
                     case Role.Exit:
