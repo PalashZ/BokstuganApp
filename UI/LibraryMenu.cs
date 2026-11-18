@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using BokstuganApp.Classes;
 using Spectre.Console;
+using BokstuganApp.Services;
 
 // Denna klassen är hur meny funkar för våran program.
 // Det visar vilka val användaren kan göra och tar input från användaren. Det visar menyn tills användaren väljer att avsluta.
@@ -16,7 +17,14 @@ namespace BokstuganApp.UI
 
     // Denna klassen är hur meny funkar för våran program.
     public class LibraryMenu
-    {       
+    {
+        private readonly BookManager _bookManager;
+
+        public LibraryMenu(BookManager bookManager)
+        {
+            _bookManager = bookManager;
+        }
+        // Denna metoden visar menyn tills användaren väljer att logga ut.
         public void ShowMenu()
         {
             bool running = true;
@@ -43,13 +51,10 @@ namespace BokstuganApp.UI
                         break;
 
                     case MenuChoice.AllBooks:
-                        var books = LibraryMenuHelper.GetDemoBooks();
-
-                        new BookTable().Show(books);
-                        new StatisticsView().ShowBooksPerGenre(books);   // den nya raden
-
+                        new BookTable().Show(_bookManager.GetAllBooks());
                         ConsoleMessages.WaitForKey();
                         break;
+
                     case MenuChoice.Search:
                     {
                         Console.Write("Sök på titel eller författare (Enter visar alla): ");
@@ -69,8 +74,10 @@ namespace BokstuganApp.UI
 
                         ConsoleMessages.WaitForKey();
                         break;
+
                     }
                     case MenuChoice.ReturnBook:
+
                     case MenuChoice.Review:
                         ConsoleMessages.Info("Den här funktionen byggs snart!.");
                         ConsoleMessages.WaitForKey();
@@ -81,8 +88,11 @@ namespace BokstuganApp.UI
                         running = false;
                         break;
 
-                   
+                    
 
+
+                   
+                   
                 }
             }
         }

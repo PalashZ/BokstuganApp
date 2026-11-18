@@ -2,12 +2,31 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-namespace BokstuganApp.Services
-{
-    internal class BookManager
+using Spectre.Console;
+using BokstuganApp.Classes;
+namespace BokstuganApp.Services;
+
+// Denna klassen hanterar logiken för att lägga till, ta bort och redigera böcker i BokstuganApp.
+// Den använder sig av DataStore för att spara och läsa böcker från en JSON-fil.
+// Denna klassen innehåller metoder för att hämta alla böcker, lägga till en bok, ta bort en bok och redigera en bok. Ett ställe där man kan managea alla böcker
+public class BookManager
     {
-        private List<Book> books = new List<Book>();
-        public void AddBook(Book book)
+    // Denna klassen hanterar logiken för att lägga till, ta bort och redigera böcker i BokstuganApp.
+    private List<Book> books = new List<Book>();
+        private DataStore<Book> bookStore;
+
+        public BookManager(DataStore<Book> bookStore)
+        {
+            this.bookStore = bookStore;
+        }
+
+        // Ger en kopia av listan, så att ingen utifrån kan ändra den direkt
+        public List<Book> GetAllBooks()
+        {
+            return new List<Book>(books);
+        }
+    // Denna metoden lägger till en bok i listan över böcker. Den kontrollerar att boken inte är null och att titeln inte är tom.
+    public void AddBook(Book book)
         {
             if (book == null)
             {
@@ -20,16 +39,13 @@ namespace BokstuganApp.Services
 
             books.Add(book);
         }
-            public IReadOnlyList<Book> GetAllBooks()
-        {
-            return books.AsReadOnly();
-        }
-            public bool RemoveBook(Book book)
+    // Denna metoden tar bort en bok från listan över böcker. Den returnerar true om boken togs bort, annars false.
+    public bool RemoveBook(Book book)
         {
             return books.Remove(book);
         }
-
-        public void EditBook(Book book, string newTitle,
+    // Denna metoden redigerar en bok i listan över böcker. Den kontrollerar att boken finns i listan, att den nya titeln inte är tom och att det nya utgivningsåret är giltigt.
+    public void EditBook(Book book, string newTitle,
             string newAuthor, string newGenre,
             int newYear, string newISBN)
         {
@@ -59,5 +75,5 @@ namespace BokstuganApp.Services
         }
 
     }
-}
+
 
