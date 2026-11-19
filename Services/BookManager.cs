@@ -12,6 +12,8 @@ public class BookManager
     // Lagringen som håller böckerna och sparar/läser dem från JSON.
     // All data ligger här. Klassen har ingen egen lista.
     private readonly DataStore<Book> bookStore;
+    private readonly LoanManager _loanManager = new LoanManager();
+    private readonly ReviewManager _reviewManager;
 
     public BookManager(DataStore<Book> bookStore)
     {

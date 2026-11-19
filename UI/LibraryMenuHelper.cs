@@ -28,7 +28,9 @@ namespace BokstuganApp.UI
                         return "Sök efter bok";
                     case MenuChoice.Review:
                         return "Lämna recension";
-                    default:
+                    case MenuChoice.LoanBook:
+                        return "Låna bok";
+                default:
                         return "Logga ut";
                 }
 

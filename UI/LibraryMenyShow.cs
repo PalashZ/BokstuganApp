@@ -18,11 +18,16 @@ namespace BokstuganApp.UI
         private readonly LoadingScreen _loadingScreen = new LoadingScreen();
         private readonly DataStore<Book> _bookStore = new DataStore<Book>("books.json");
         private readonly BookManager _bookManager;
+        private readonly LoanManager _loanManager;
+        private readonly ReviewManager _reviewManager;
 
         public LibraryMenyShow()
         {
             _bookManager = new BookManager(_bookStore);
+            _loanManager = new LoanManager();
+            _reviewManager = new ReviewManager(_loanManager);
         }
+
 
         public void Run()
         // Denna metoden kör huvudmenyn för BokstuganApp. Den visar startskärmen, laddningsskärmen och hanterar användarens val av roll (användare eller admin).
@@ -40,8 +45,11 @@ namespace BokstuganApp.UI
                 switch(_startScreen.SelectRole())
                 {
                     case Role.User:
-                        new LibraryMenu(_bookManager).ShowMenu();
-                        break;
+                        {
+                            string userName = InputHelper.AskText("Vad heter du?");
+                            new LibraryMenu(_bookManager, _loanManager, _reviewManager, userName).ShowMenu();
+                            break;
+                        }
 
                     case Role.Admin:
                         new AdminMenu(_bookManager).ShowMenu();
