@@ -5,25 +5,29 @@ using System.Text.Json.Serialization;
 
 namespace BokstuganApp.Classes
 {
-    internal class Loan
+    namespace BokstuganApp.Classes
     {
-        // Ett lån: vem som lånat vilken bok, och när den ska tillbaka.
-        public class Loan_Books
+        // En lånehändelse: vem har lånat vilken bok, och när den ska tillbaka
+        public class Loan
         {
-            public int Id { get; set; }
-            public int BookId { get; set; }              // Vilken bok (vi sparar bara id:t)
-            public string UserName { get; set; } = "";   // Vem som lånat
-            public DateTime LoanDate { get; set; }       // När boken lånades
-            public DateTime DueDate { get; set; }        // När den senast ska lämnas tillbaka
-            public DateTime? ReturnDate { get; set; }    // null = inte återlämnad än
-            public int ExtensionCount { get; set; }      // Hur många gånger lånet förlängts
+            public static object Loan_Books { get; internal set; }
+            public string Isbn { get; set; } = "";
+            public string Borrower { get; set; } = "";
+            public DateTime LoanDate { get; set; }
+            public DateTime DueDate { get; set; }
+            public DateTime? ReturnDate { get; set; }
 
-            // Räknas ut automatiskt, sparas inte i JSON
-            [JsonIgnore]
-            public bool IsReturned => ReturnDate.HasValue;
+            // Sant så länge boken inte är återlämnad
+            public bool IsActive
+            {
+                get { return ReturnDate == null; }
+            }
 
-            [JsonIgnore]
-            public bool IsOverdue => !IsReturned && DateTime.Now.Date > DueDate.Date;
+            // Sant om lånet är aktivt och förfallodatumet har passerat
+            public bool IsOverdue
+            {
+                get { return IsActive && DateTime.Now.Date > DueDate.Date; }
+            }
         }
     }
 }
