@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using BokstuganApp.Classes;
 using Spectre.Console;
-using BokstuganApp.Services;
+
 
 // Denna klassen är hur meny funkar för våran program.
 // Det visar vilka val användaren kan göra och tar input från användaren. Det visar menyn tills användaren väljer att avsluta.
@@ -61,8 +61,7 @@ namespace BokstuganApp.UI
                         string? searchText = Console.ReadLine();
 
                         var results = new SearchService().SearchByText(
-                            LibraryMenuHelper.GetDemoBooks(), searchText);
-
+                            _bookManager.GetAllBooks(), searchText);
                         if (results.Count == 0)
                         {
                             ConsoleMessages.Warning("Inga böcker hittades.");
