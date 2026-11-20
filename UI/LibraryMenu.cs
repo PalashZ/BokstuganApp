@@ -116,12 +116,15 @@ namespace BokstuganApp.UI
                             break;
                         }
 
+                        // Detta visar alla böcker för användraren
                     case MenuChoice.AllBooks:
                         BrowseBooks();
                         break;
 
+                        // Väljer en ledig bok slumpmässigt och visar den som ett boktips till användaren
                     case MenuChoice.RandomBook:
                     {
+                            // Detta hämtar bara de böcker som inte är utlånad
                         var books = _bookManager.GetAllBooks()
                             .Where(book => !_loanManager.IsLoaned(book.ISBN))
                             .ToList();
@@ -139,6 +142,7 @@ namespace BokstuganApp.UI
                         break;
                     }
 
+                        // Söker bland böckerna på titel eller författare för att hitta boken
                     case MenuChoice.Search:
                     {
                         Console.Write("Sök på titel eller författare (Enter visar alla): ");
@@ -159,6 +163,8 @@ namespace BokstuganApp.UI
                         break;
 
                     }
+
+                        // Låter användaren lämna in en av sina lånade böcker 
                     case MenuChoice.ReturnBook:
                         {
                             var activeLoans = _loanManager.GetActiveLoansForUser(_userName);
@@ -169,6 +175,8 @@ namespace BokstuganApp.UI
                             }
                             else
                             {
+
+                                // Skapar valen i menyn, det som behövs för att skapa en bok
                                 var loanChoices = activeLoans
                                     .Select((item, index) => new
                                     {
@@ -178,6 +186,8 @@ namespace BokstuganApp.UI
                                     .ToDictionary(item => item.Choice, item => item.Loan);
                                 const string backChoice = "Tillbaka till menyn";
                                 loanChoices.Add(backChoice, null!);
+
+                                // Visar en pilmeny där användaren väljer vilken bok som ska lämnas in
                                 var loanChoice = AnsiConsole.Prompt(
                                     new SelectionPrompt<string>()
                                         .Title("[yellow]Vilken bok vill du lämna in?[/]")
@@ -187,6 +197,7 @@ namespace BokstuganApp.UI
 
                                 bool wasLate = loan.IsOverdue;
 
+                                // Försöker lämna in boken och fångar fel så att programmmet inte kraschar
                                 try
                                 {
                                     _loanManager.ReturnBook(loan.Isbn, _userName);
@@ -212,6 +223,8 @@ namespace BokstuganApp.UI
                             break;
                         }
 
+                        // Låter användaren recensera en bok som användaren har lånat/läst
+
                     case MenuChoice.Review:
                         {
                             var borrowedBooks = _bookManager.GetAllBooks()
@@ -224,11 +237,14 @@ namespace BokstuganApp.UI
                             }
                             else
                             {
+                                // Låter användaren välja vilken bok som ska recenseras
                                 var book = ChooseBook("Vilken bok vill du recensera?", borrowedBooks);
                                 if (book == null) break;
                                 int rating = InputHelper.AskInt("Betyg (1-5)", 1, 5);
                                 string comment = InputHelper.AskText("Kommentar");
 
+                                // Försöker spara recensionen och fångar regelfel
+                                // Det hade stoppat och visat fel om någon lämnar dubbla recension
                                 try
                                 {
                                     _reviewManager.AddReview(book.ISBN, _userName, rating, comment);
@@ -244,11 +260,12 @@ namespace BokstuganApp.UI
                             break;
                         }
 
-
+                        // Avslutar menyloopen så att användaren kommer tillbaka till rollvalet
                     case MenuChoice.LogOut:
                         running = false;
                         break;
 
+                        // Låter användaren skicka en ticket till admin
                     case MenuChoice.Ticket:
                         SubmitTicket();
                         break;
@@ -260,11 +277,13 @@ namespace BokstuganApp.UI
 
         }
 
+        // Hjälper till för att skicka ticket
         private void SubmitTicket()
         {
             const string sendChoice = "Skicka en ticket";
             const string backChoice = "Tillbaka till menyn";
 
+            //  visar en pilmeny, skicka ticket eller gå tillbaka
             var choice = AnsiConsole.Prompt(
                 new SelectionPrompt<string>()
                     .Title("[yellow]Ticket[/]")
@@ -276,6 +295,7 @@ namespace BokstuganApp.UI
                 return;
             }
 
+            // Rad 299-310, handlar om hur ticket flödet ska funka
             string message = InputHelper.AskText("Beskriv felet eller önskad bok");
             var tickets = _ticketStore.GetAll();
             _ticketStore.AddItem(new Ticket
@@ -299,6 +319,7 @@ namespace BokstuganApp.UI
                     .UseConverter(b => Markup.Escape(b.Title + " (" + b.Author + ")")));
         }
 
+        // Visar alla böcker och låter användaren välja en bok för att läsa mer
         private void BrowseBooks()
         {
             var books = _bookManager.GetAllBooks();
@@ -314,6 +335,8 @@ namespace BokstuganApp.UI
                 .ToDictionary(item => item.Choice, item => item.Book);
             bookChoices.Add("Tillbaka till menyn", null!);
 
+            // Styr loopen så att användaren kan titta på flera böcker i rad
+            // Visar också ett stapeldigram över antal böcker per genre
             bool browsing = true;
             while (browsing)
             {
@@ -331,7 +354,7 @@ namespace BokstuganApp.UI
                     browsing = false;
                     continue;
                 }
-
+                // VIsar bokens detaljer och ser vad som användaren vill göra sedan
                 var selectedBook = bookChoices[choice];
                 var action = ShowBookDetails(selectedBook);
                 if (action == BookDetailsAction.BackToMenu)
@@ -339,6 +362,7 @@ namespace BokstuganApp.UI
             }
         }
 
+        // Visar en bok med recensioner och låter användaren låna den eller gå tillbaka
         private BookDetailsAction ShowBookDetails(Book selectedBook)
         {
             bool isAvailable = !_loanManager.IsLoaned(selectedBook.ISBN);
@@ -366,6 +390,8 @@ namespace BokstuganApp.UI
 
             if (action == BookDetailsAction.Loan)
             {
+
+                // Försöker låna boken och fångar regelfel
                 try
                 {
                     var loan = _loanManager.LoanBook(selectedBook, _userName);

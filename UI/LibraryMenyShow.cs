@@ -53,9 +53,13 @@ namespace BokstuganApp.UI
                 dataLoaded = true;
 
                 bool running = true;
+
+                // Visar rollvalet om och om igen tills programmet avslutas
                 while (running)
                 {
                     _startScreen.ShowBanner();
+
+                    // Startar rätt meny beroende på vilken roll som valdes
 
                     switch (_startScreen.SelectRole())
                     {
@@ -78,6 +82,8 @@ namespace BokstuganApp.UI
                     }
                 }
             }
+
+            // Fångar oväntas fel och visar dem i rött så att programmet inte kraschar
             catch (Exception ex)
             {
                 ConsoleMessages.Error(ex.Message);
@@ -88,6 +94,8 @@ namespace BokstuganApp.UI
                 _loadingScreen.ShowShutdown(() =>
                 {
                     if (!dataLoaded) return;
+
+                    // Här visar alla lagringar son sparas till JSON
                     try
                     {
                         _bookStore.SaveToJson();
@@ -105,6 +113,7 @@ namespace BokstuganApp.UI
 
         }
 
+        // Registrerar en ny användare om namnet inte redan finns
         private void RegisterUser(string name)
         {
             if (string.IsNullOrWhiteSpace(name) || _userStore.GetAll()
@@ -115,6 +124,7 @@ namespace BokstuganApp.UI
             _userStore.AddItem(new User { Id = users.Count == 0 ? 1 : users.Max(user => user.Id) + 1, Name = name.Trim() });
         }
 
+        // Frågar efter adminlösenordet. Ger true om der stämmer
         private static bool AuthenticateAdmin()
         {
             AnsiConsole.Clear();
