@@ -1,4 +1,5 @@
 ﻿using BokstuganApp.Classes;
+using BokstuganApp.UI;
 using System;
 using System.Collections.Generic;
 
@@ -12,9 +13,6 @@ public class BookManager
     // Lagringen som håller böckerna och sparar/läser dem från JSON.
     // All data ligger här. Klassen har ingen egen lista.
     private readonly DataStore<Book> bookStore;
-    private readonly LoanManager _loanManager = new LoanManager();
-    private readonly ReviewManager _reviewManager;
-
     public BookManager(DataStore<Book> bookStore)
     {
         this.bookStore = bookStore;
@@ -22,6 +20,23 @@ public class BookManager
         // Läser in böcker som sparades förra gången programmet kördes.
         // Finns ingen fil än blir listan bara tom.
         this.bookStore.LoadFromJson();
+
+        // Lägg till det versionshanterade grundpaketet även i befintliga lokala bibliotek.
+        // Kontrollerar både ID och ISBN så en bok inte läggs in två gånger.
+        var books = this.bookStore.GetAll();
+        bool addedSeedBooks = false;
+        foreach (var seedBook in LibraryMenuHelper.GetDemoBooks())
+        {
+            if (books.Any(book => book.Id == seedBook.Id || book.ISBN == seedBook.ISBN))
+                continue;
+
+            this.bookStore.AddItem(seedBook);
+            books.Add(seedBook);
+            addedSeedBooks = true;
+        }
+
+        if (addedSeedBooks)
+            this.bookStore.SaveToJson();
     }
 
     // DataStore.GetAll() ger redan en kopia av listan,

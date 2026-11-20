@@ -1,167 +1,296 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Linq;
 using BokstuganApp.Classes;
 using BokstuganApp.Services;
 using Spectre.Console;
-namespace BokstuganApp.UI;
-// Denna klassen är menyn för admin. Den hanterar visning, tillägg, ändring och borttagning av böcker.
-public enum AdminChoice { ShowAll, AddBook, EditBook, RemoveBook, LogOut }
 
-// Menyn för admin: visa, lägga till, ändra och ta bort böcker
+namespace BokstuganApp.UI;
+
+public enum AdminChoice { ShowAll, Statistics, ShowTickets, ShowUsers, AddBook, EditBook, RemoveBook, RemoveUser, LogOut }
+
 public class AdminMenu
 {
     private readonly BookManager _bookManager;
+    private readonly LoanManager _loanManager;
+    private readonly DataStore<User> _userStore;
+    private readonly DataStore<Ticket> _ticketStore;
 
-    public AdminMenu(BookManager bookManager) => _bookManager = bookManager;
+    public AdminMenu(BookManager bookManager, LoanManager loanManager, DataStore<User> userStore, DataStore<Ticket> ticketStore)
+    {
+        _bookManager = bookManager;
+        _loanManager = loanManager;
+        _userStore = userStore;
+        _ticketStore = ticketStore;
+    }
 
-    // Denna metoden visar menyn tills användaren väljer att logga ut. Den använder Spectre.Console för att skapa en snygg meny med färger och val.
     public void ShowMenu()
     {
         bool running = true;
-
         while (running)
         {
             AnsiConsole.Clear();
             AnsiConsole.Write(new Rule("[aqua]Adminmeny[/]").LeftJustified());
             AnsiConsole.WriteLine();
-
             var choice = AnsiConsole.Prompt(
                 new SelectionPrompt<AdminChoice>()
                     .Title("[yellow]Vad vill du göra?[/]")
                     .HighlightStyle(new Style(Color.Aqua))
                     .AddChoices(Enum.GetValues<AdminChoice>())
                     .UseConverter(ToText));
-            // Använder en switch-sats för att hantera användarens val och anropa rätt funktion.
 
             switch (choice)
             {
-                case AdminChoice.ShowAll:
-                    new BookTable().Show(_bookManager.GetAllBooks());
-                    ConsoleMessages.WaitForKey();
-                    break;
-                case AdminChoice.AddBook:
-                    AddBook();
-                    break;
-                case AdminChoice.EditBook:
-                    EditBook();
-                    break;
-                case AdminChoice.RemoveBook:
-                    RemoveBook();
-                    break;
-                case AdminChoice.LogOut:
-                    running = false;
-                    break;
+                case AdminChoice.ShowAll: ShowAllBooks(); break;
+                case AdminChoice.Statistics: ShowStatistics(); break;
+                case AdminChoice.ShowTickets: ShowTickets(); break;
+                case AdminChoice.ShowUsers: ShowUsers(); break;
+                case AdminChoice.AddBook: AddBook(); break;
+                case AdminChoice.EditBook: EditBook(); break;
+                case AdminChoice.RemoveBook: RemoveBook(); break;
+                case AdminChoice.RemoveUser: RemoveUser(); break;
+                case AdminChoice.LogOut: running = false; break;
             }
         }
     }
 
-    // Frågar efter alla fält och lägger till boken
+    private void ShowStatistics()
+    {
+        new StatisticsView().ShowBooksPerGenre(_bookManager.GetAllBooks());
+        ConsoleMessages.WaitForKey();
+    }
+
+    private void ShowTickets()
+    {
+        const string back = "Tillbaka till adminmenyn";
+
+        while (true)
+        {
+            var tickets = _ticketStore.GetAll().OrderByDescending(ticket => ticket.CreatedAt).ToList();
+            if (tickets.Count == 0)
+            {
+                ConsoleMessages.Info("Det finns inga inkomna tickets.");
+                ConsoleMessages.WaitForKey();
+                return;
+            }
+
+            var choices = tickets.Select((ticket, index) => new
+                {
+                    Ticket = ticket,
+                    Label = $"{ticket.CreatedAt:yyyy-MM-dd HH:mm} — {ticket.UserName} ({index + 1})"
+                })
+                .ToDictionary(item => item.Label, item => item.Ticket);
+            choices.Add(back, null!);
+
+            string selected = AnsiConsole.Prompt(new SelectionPrompt<string>()
+                .Title("Välj en ticket att öppna:")
+                .HighlightStyle(new Style(Color.Aqua))
+                .AddChoices(choices.Keys));
+            if (selected == back)
+                return;
+
+            var ticket = choices[selected];
+            AnsiConsole.Write(new Panel(
+                    $"[bold]Från:[/] {Markup.Escape(ticket.UserName)}\n" +
+                    $"[bold]Datum:[/] {ticket.CreatedAt:yyyy-MM-dd HH:mm}\n\n" +
+                    Markup.Escape(ticket.Message))
+                .Header("Ticket")
+                .Border(BoxBorder.Rounded)
+                .BorderColor(Color.Aqua)
+                .Padding(1, 1));
+
+            string action = AnsiConsole.Prompt(new SelectionPrompt<string>()
+                .Title("Vad vill du göra?")
+                .AddChoices("Ta bort ticket", "Tillbaka till ticketlistan"));
+
+            if (action == "Ta bort ticket" && InputHelper.Confirm("Vill du verkligen ta bort den här ticketen?"))
+            {
+                _ticketStore.RemoveItem(ticket);
+                _ticketStore.SaveToJson();
+                ConsoleMessages.Success("Ticketen har tagits bort.");
+            }
+        }
+    }
+
+    private void ShowAllBooks()
+    {
+        var books = _bookManager.GetAllBooks();
+        if (books.Count == 0)
+        {
+            ConsoleMessages.Warning("Det finns inga böcker.");
+            ConsoleMessages.WaitForKey();
+            return;
+        }
+
+        var table = new Table().AddColumn("Bok").AddColumn("Författare").AddColumn("Lånad av").AddColumn("Förfallodatum");
+        foreach (var book in books)
+        {
+            var loan = _loanManager.GetActiveLoansForBook(book.ISBN);
+            table.AddRow(
+                Markup.Escape(book.Title),
+                Markup.Escape(book.Author),
+                loan == null ? "Tillgänglig" : Markup.Escape(loan.Borrower),
+                loan == null ? "—" : loan.DueDate.ToString("yyyy-MM-dd"));
+        }
+        AnsiConsole.Write(table);
+        AnsiConsole.WriteLine();
+        new StatisticsView().ShowBooksPerGenre(books);
+
+        var activeLoans = books
+            .Select(book => new { Book = book, Loan = _loanManager.GetActiveLoansForBook(book.ISBN) })
+            .Where(item => item.Loan != null)
+            .ToList();
+        if (activeLoans.Count > 0)
+        {
+            var choices = activeLoans.Select((item, index) => new
+            {
+                item.Loan,
+                Choice = $"Markera {item.Book.Title} som återlämnad — {item.Loan!.Borrower} ({index + 1})"
+            }).ToDictionary(item => item.Choice, item => item.Loan!);
+            const string back = "Tillbaka till adminmenyn";
+            choices.Add(back, null!);
+            string selected = AnsiConsole.Prompt<string>(new SelectionPrompt<string>()
+                .Title("Välj ett lån att avsluta, eller gå tillbaka:")
+                .AddChoices(choices.Keys));
+            if (selected != back)
+            {
+                var loan = choices[selected];
+                if (InputHelper.Confirm($"Markera {loan.Isbn} som återlämnad av {loan.Borrower}?"))
+                {
+                    _loanManager.ReturnBook(loan.Isbn, loan.Borrower);
+                    ConsoleMessages.Success("Lånet har avslutats och boken är tillgänglig igen.");
+                }
+            }
+        }
+        else
+        {
+            ConsoleMessages.Info("Inga böcker är utlånade just nu.");
+            ConsoleMessages.WaitForKey();
+        }
+    }
+
+    private void ShowUsers()
+    {
+        var users = _userStore.GetAll().OrderBy(user => user.Name, StringComparer.OrdinalIgnoreCase).ToList();
+        if (users.Count == 0)
+            ConsoleMessages.Warning("Det finns inga registrerade användare ännu.");
+        else
+        {
+            var table = new Table().AddColumn("Användare").AddColumn("Aktiva lån");
+            foreach (var user in users)
+                table.AddRow(Markup.Escape(user.Name), _loanManager.GetActiveLoansForUser(user.Name).Count.ToString());
+            AnsiConsole.Write(table);
+        }
+        ConsoleMessages.WaitForKey();
+    }
+
+    private void RemoveUser()
+    {
+        var users = _userStore.GetAll().OrderBy(user => user.Name, StringComparer.OrdinalIgnoreCase).ToList();
+        if (users.Count == 0)
+        {
+            ConsoleMessages.Warning("Det finns inga användare att ta bort.");
+            ConsoleMessages.WaitForKey();
+            return;
+        }
+
+        var choices = users.Select((user, index) => new { User = user, Choice = $"{user.Name} ({index + 1})" })
+            .ToDictionary(item => item.Choice, item => item.User);
+        const string back = "Tillbaka till adminmenyn";
+        choices.Add(back, null!);
+        var choice = AnsiConsole.Prompt(new SelectionPrompt<string>()
+            .Title("Vilken användare vill du ta bort?")
+            .AddChoices(choices.Keys));
+        if (choice == back) return;
+
+        var selectedUser = choices[choice];
+        var activeLoanCount = _loanManager.GetActiveLoansForUser(selectedUser.Name).Count;
+        if (!InputHelper.Confirm($"Ta bort {selectedUser.Name} och radera användarens lånehistorik? Aktiva lån: {activeLoanCount}."))
+            return;
+
+        _loanManager.RemoveLoansForUser(selectedUser.Name);
+        _userStore.RemoveItem(selectedUser);
+        _userStore.SaveToJson();
+        ConsoleMessages.Success($"Användaren {selectedUser.Name} och dess lån har tagits bort.");
+        ConsoleMessages.WaitForKey();
+    }
+
     private void AddBook()
     {
+        var action = AnsiConsole.Prompt(new SelectionPrompt<string>()
+            .Title("Skapa en ny bok?")
+            .AddChoices("Fortsätt", "Tillbaka till adminmenyn"));
+        if (action == "Tillbaka till adminmenyn") return;
+
         string title = InputHelper.AskText("Titel");
         string author = InputHelper.AskText("Författare");
         string genre = InputHelper.AskText("Genre");
         int year = InputHelper.AskInt("År", 1000, DateTime.Now.Year);
         string isbn = InputHelper.AskText("ISBN");
-
-        // Använder try-catch för att hantera eventuella undantag som kan uppstå vid tillägg av boken. Om ett undantag uppstår, visas ett felmeddelande i konsolen.
         try
         {
             _bookManager.AddBook(new Book(title, author, genre, year, isbn));
             ConsoleMessages.Success("Boken har lagts till.");
         }
-        catch (ArgumentException ex)
-        {
-            ConsoleMessages.Error(ex.Message);
-        }
-
+        catch (ArgumentException ex) { ConsoleMessages.Error(ex.Message); }
         ConsoleMessages.WaitForKey();
     }
 
-    // Låter admin välja en bok och skriva in nya värden
     private void EditBook()
     {
         Book? book = ChooseBook("Vilken bok vill du ändra?");
-        if (book == null)
-        {
-            ConsoleMessages.WaitForKey();
-            return;
-        }
-        // Frågar efter nya värden för boken och använder try-catch för att hantera eventuella undantag som kan uppstå vid ändring av boken.
-        // Om ett undantag uppstår, visas ett felmeddelande i konsolen.
+        if (book == null) return;
         string title = InputHelper.AskText("Ny titel");
         string author = InputHelper.AskText("Ny författare");
         string genre = InputHelper.AskText("Ny genre");
         int year = InputHelper.AskInt("Nytt år", 1000, DateTime.Now.Year);
         string isbn = InputHelper.AskText("Nytt ISBN");
-
         try
         {
             _bookManager.EditBook(book, title, author, genre, year, isbn);
             ConsoleMessages.Success("Boken har ändrats.");
         }
-        catch (ArgumentException ex)
-        {
-            ConsoleMessages.Error(ex.Message);
-        }
-
+        catch (ArgumentException ex) { ConsoleMessages.Error(ex.Message); }
         ConsoleMessages.WaitForKey();
     }
 
-    // Låter admin välja en bok och bekräfta borttagningen
     private void RemoveBook()
     {
         Book? book = ChooseBook("Vilken bok vill du ta bort?");
-        if (book == null)
-        {
-            ConsoleMessages.WaitForKey();
-            return;
-        }
-
+        if (book == null) return;
         if (InputHelper.Confirm("Vill du verkligen ta bort \"" + book.Title + "\"?"))
-        {
-            if (_bookManager.RemoveBook(book))
-            {
-                ConsoleMessages.Success("Boken har tagits bort.");
-            }
-            else
-            {
-                ConsoleMessages.Warning("Boken fanns inte.");
-            }
-        }
-
+            ConsoleMessages.Success(_bookManager.RemoveBook(book) ? "Boken har tagits bort." : "Boken fanns inte.");
         ConsoleMessages.WaitForKey();
     }
 
-    // Visar en pilmeny med alla böcker. Ger null om det inte finns några
     private Book? ChooseBook(string title)
     {
         var books = _bookManager.GetAllBooks();
-
         if (books.Count == 0)
         {
             ConsoleMessages.Warning("Det finns inga böcker.");
             return null;
         }
-
-        return AnsiConsole.Prompt(
-            new SelectionPrompt<Book>()
-                .Title("[yellow]" + title + "[/]")
-                .AddChoices(books)
-                .UseConverter(b => Markup.Escape(b.Title + " (" + b.Author + ")")));
+        var choices = books.Select((item, index) => new { Book = item, Choice = $"{item.Title} — {item.Author} ({index + 1})" })
+            .ToDictionary(item => item.Choice, item => item.Book);
+        const string back = "Tillbaka till adminmenyn";
+        choices.Add(back, null!);
+        var choice = AnsiConsole.Prompt(new SelectionPrompt<string>()
+            .Title("[yellow]" + title + "[/]")
+            .AddChoices(choices.Keys));
+        return choice == back ? null : choices[choice];
     }
 
-    // Konverterar AdminChoice till en sträng som kan visas i menyn. Använder en switch-sats för att returnera rätt text beroende på valet.
-    private static string ToText(AdminChoice choice)
+    private static string ToText(AdminChoice choice) => choice switch
     {
-        switch (choice)
-        {
-            case AdminChoice.ShowAll: return "Visa alla böcker";
-            case AdminChoice.AddBook: return "Lägg till bok";
-            case AdminChoice.EditBook: return "Ändra bok";
-            case AdminChoice.RemoveBook: return "Ta bort bok";
-            default: return "Logga ut";
-        }
-    }
+        AdminChoice.ShowAll => "Visa alla böcker",
+        AdminChoice.Statistics => "Statistik",
+        AdminChoice.ShowTickets => "Visa tickets",
+        AdminChoice.ShowUsers => "Visa användare",
+        AdminChoice.AddBook => "Lägg till bok",
+        AdminChoice.EditBook => "Ändra bok",
+        AdminChoice.RemoveBook => "Ta bort bok",
+        AdminChoice.RemoveUser => "Ta bort användare",
+        _ => "Logga ut"
+    };
 }

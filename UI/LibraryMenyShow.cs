@@ -12,58 +12,122 @@ namespace BokstuganApp.UI
     // Denna klassen använder StartScreen och LoadingScreen för att visa start- och stängningsskärmarna.
     public class LibraryMenyShow
     {
+        // Lagring: en låda per datatyp
+        private readonly DataStore<Book> _bookStore = new DataStore<Book>("books.json");
+        private readonly DataStore<Loan> _loanStore = new DataStore<Loan>("loans.json");
+        private readonly DataStore<Review> _reviewStore = new DataStore<Review>("reviews.json");
+        private readonly DataStore<User> _userStore = new DataStore<User>("users.json");
+        private readonly DataStore<Ticket> _ticketStore = new DataStore<Ticket>("tickets.json");
 
-        // Denna klassen använder sig av readonly fält för att skapa instanser av StartScreen och LoadingScreen som används för att visa start- och stängningsskärmarna.
+        // Managers: skapas efter lagringen, eftersom de behöver den
+        private BookManager _bookManager = null!;
+        private LoanManager _loanManager = null!;
+        private ReviewManager _reviewManager = null!;
+
         private readonly StartScreen _startScreen = new StartScreen();
         private readonly LoadingScreen _loadingScreen = new LoadingScreen();
-        private readonly DataStore<Book> _bookStore = new DataStore<Book>("books.json");
-        private readonly BookManager _bookManager;
-        private readonly LoanManager _loanManager;
-        private readonly ReviewManager _reviewManager;
-
-        public LibraryMenyShow()
-        {
-            _bookManager = new BookManager(_bookStore);
-            _loanManager = new LoanManager();
-            _reviewManager = new ReviewManager(_loanManager);
-        }
-
 
         public void Run()
-        // Denna metoden kör huvudmenyn för BokstuganApp. Den visar startskärmen, laddningsskärmen och hanterar användarens val av roll (användare eller admin).
         {
             Console.OutputEncoding = System.Text.Encoding.UTF8;
-
             _loadingScreen.ShowStartup();
 
-            bool running = true;
-            // Använder en while-loop för att visa startskärmen och hantera användarens val tills användaren väljer att avsluta.
-            while (running)
+            bool dataLoaded = false;
+            try
             {
-                _startScreen.ShowBanner();
+                // Managers read the saved books, loans and reviews when they are created.
+                _bookManager = new BookManager(_bookStore);
+                _loanManager = new LoanManager(_loanStore);
+                _reviewManager = new ReviewManager(_reviewStore, _loanManager);
+                _userStore.LoadFromJson();
+                _ticketStore.LoadFromJson();
 
-                switch(_startScreen.SelectRole())
+                // Ta med användarnamn från tidigare lånehistorik.
+                foreach (var borrower in _loanStore.GetAll()
+                    .Select(loan => loan.Borrower)
+                    .Where(name => !string.IsNullOrWhiteSpace(name)))
                 {
-                    case Role.User:
+                    RegisterUser(borrower);
+                }
+
+                dataLoaded = true;
+
+                bool running = true;
+                while (running)
+                {
+                    _startScreen.ShowBanner();
+
+                    switch (_startScreen.SelectRole())
+                    {
+                        case Role.User:
                         {
-                            string userName = InputHelper.AskText("Vad heter du?");
-                            new LibraryMenu(_bookManager, _loanManager, _reviewManager, userName).ShowMenu();
+                            string userName = InputHelper.AskUserName("Vad heter du?");
+                            RegisterUser(userName);
+                            new LibraryMenu(_bookManager, _loanManager, _reviewManager, userName, _ticketStore).ShowMenu();
                             break;
                         }
 
-                    case Role.Admin:
-                        new AdminMenu(_bookManager).ShowMenu();
-                        break;
+                        case Role.Admin:
+                            if (AuthenticateAdmin())
+                                new AdminMenu(_bookManager, _loanManager, _userStore, _ticketStore).ShowMenu();
+                            break;
 
-                    case Role.Exit:
-                        running = false;
-                        break;
+                        case Role.Exit:
+                            running = false;
+                            break;
+                    }
                 }
             }
-            _loadingScreen.ShowShutdown();
+            catch (Exception ex)
+            {
+                ConsoleMessages.Error(ex.Message);
+                ConsoleMessages.WaitForKey();
+            }
+            finally
+            {
+                _loadingScreen.ShowShutdown(() =>
+                {
+                    if (!dataLoaded) return;
+                    try
+                    {
+                        _bookStore.SaveToJson();
+                        _loanStore.SaveToJson();
+                        _reviewStore.SaveToJson();
+                        _userStore.SaveToJson();
+                        _ticketStore.SaveToJson();
+                    }
+                    catch (Exception ex)
+                    {
+                        ConsoleMessages.Error("Kunde inte spara all data: " + ex.Message);
+                    }
+                });
+            }
 
+        }
 
-            
+        private void RegisterUser(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name) || _userStore.GetAll()
+                .Any(user => string.Equals(user.Name, name.Trim(), StringComparison.OrdinalIgnoreCase)))
+                return;
+
+            var users = _userStore.GetAll();
+            _userStore.AddItem(new User { Id = users.Count == 0 ? 1 : users.Max(user => user.Id) + 1, Name = name.Trim() });
+        }
+
+        private static bool AuthenticateAdmin()
+        {
+            AnsiConsole.Clear();
+            AnsiConsole.Write(new Rule("[aqua]Admininloggning[/]").LeftJustified());
+            string password = AnsiConsole.Prompt(
+                new TextPrompt<string>("Lösenord:").Secret());
+
+            if (password == "nbi")
+                return true;
+
+            ConsoleMessages.Error("Fel lösenord.");
+            ConsoleMessages.WaitForKey();
+            return false;
         }
     }
 }

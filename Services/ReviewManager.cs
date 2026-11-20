@@ -9,11 +9,15 @@ namespace BokstuganApp.Services
     // Hanterar recensioner. Regeln: man kan bara recensera böcker man lånat
     public class ReviewManager
     {
-        private readonly List<Review> _reviews = new List<Review>();
+        private readonly DataStore<Review> _reviewStore;
+        private readonly List<Review> _reviews;
         private readonly LoanManager _loanManager;
 
-        public ReviewManager(LoanManager loanManager)
+        public ReviewManager(DataStore<Review> reviewStore, LoanManager loanManager)
         {
+            _reviewStore = reviewStore;
+            _reviewStore.LoadFromJson();
+            _reviews = _reviewStore.GetAll();
             _loanManager = loanManager;
         }
 
@@ -54,12 +58,23 @@ namespace BokstuganApp.Services
                 Comment = comment,
                 Date = DateTime.Now
             });
+            _reviewStore.SaveToJson(_reviews);
         }
 
         // Alla recensioner för en bok
         public List<Review> GetReviewsForBook(string isbn)
         {
             return _reviews.Where(r => r.ISBN == isbn).ToList();
+        }
+
+        // De tre senaste recensionerna visas på bokens detaljsida.
+        public List<Review> GetLatestReviewsForBook(string isbn)
+        {
+            return _reviews
+                .Where(r => r.ISBN == isbn)
+                .OrderByDescending(r => r.Date)
+                .Take(3)
+                .ToList();
         }
 
         // Snittbetyg för en bok, 0 om det saknas recensioner

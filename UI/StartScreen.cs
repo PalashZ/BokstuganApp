@@ -14,13 +14,6 @@ namespace BokstuganApp.UI
     public class StartScreen
     // Denna klassen används för att visa startskärmen och laddningsskärmen i konsolen.
     {
-        private readonly DataStore<Book> _bookStore = new DataStore<Book>("books.json");
-        private readonly BookManager _bookManager;
-
-        public StartScreen()
-        {
-            _bookManager = new BookManager(_bookStore);
-        }
         public void ShowBanner()
         {
             AnsiConsole.Clear();
@@ -44,28 +37,6 @@ namespace BokstuganApp.UI
                         _ => "Avsluta"
 
                     }));
-        }
-
-        public void LoadWithProgress()
-        // Denna metoden visar en progress bar medan data laddas in i konsolen.
-        {
-            AnsiConsole.Progress().Start(ctx =>
-            {
-                var task = ctx.AddTask("[[grren]Läser in böcker[/]");
-                while (!ctx.IsFinished)
-                {
-                    task.Increment(5);
-                    Thread.Sleep(40);
-                }
-            });
-        }
-
-        public void SaveWithSpinner(Action save)
-        // Denna metoden visar en spinner medan data sparas i konsolen.
-        {
-            AnsiConsole.Status()
-                .Spinner(Spinner.Known.Dots)
-                .Start("Sparar...", _ => save());
         }
 
         public class LoadingScreen
@@ -113,7 +84,7 @@ namespace BokstuganApp.UI
             }
 
             // Visas när programmet avslutas: spinner medan data sparas, sedan ett tack
-            public void ShowShutdown()
+            public void ShowShutdown(Action save)
             {
                 AnsiConsole.Clear();
 
@@ -122,9 +93,9 @@ namespace BokstuganApp.UI
                     .SpinnerStyle(Style.Parse("aqua"))
                     .Start("Sparar data...", ctx =>
                     {
-                        Thread.Sleep(800);
+                        save();
                         ctx.Status("Stänger ner...");
-                        Thread.Sleep(600);
+                        Thread.Sleep(400);
                     });
 
                 AnsiConsole.Write(new FigletText("Tack!").Centered().Color(Color.Aqua));

@@ -5,7 +5,6 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using BokstuganApp.Classes;
 using Spectre.Console;
-using BokstuganApp.Classes.BokstuganApp.Classes;
 using System.Linq;
 
 
@@ -15,7 +14,8 @@ namespace BokstuganApp.UI
 {
     // Enum som representerar de olika valen i menyn.
     // Varje värde motsvarar en funktion som användaren kan välja.
-    public enum MenuChoice { MyBooks, AllBooks, LoanBook, ReturnBook, Search, Review, LogOut }
+    public enum MenuChoice { MyBooks, AllBooks, RandomBook, ReturnBook, Search, Review, Ticket, LogOut }
+    public enum BookDetailsAction { Loan, BackToBooks, BackToMenu }
 
     // Denna klassen är hur meny funkar för våran program.
     public class LibraryMenu
@@ -24,23 +24,31 @@ namespace BokstuganApp.UI
         private readonly LoanManager _loanManager;
         private readonly ReviewManager _reviewManager;
         private readonly string _userName;
+        private readonly DataStore<Ticket> _ticketStore;
 
-        public LibraryMenu(BookManager bookManager, LoanManager loanManager, ReviewManager reviewManager, string userName)
+        public LibraryMenu(BookManager bookManager, LoanManager loanManager, ReviewManager reviewManager, string userName, DataStore<Ticket> ticketStore)
         {
             _bookManager = bookManager;
             _loanManager = loanManager;
             _reviewManager = reviewManager;
             _userName = userName;
+            _ticketStore = ticketStore;
         }
 
-        private Book ChooseBook(string title, List<Book> books)
+        private Book? ChooseBook(string title, List<Book> books)
         {
-            return AnsiConsole.Prompt(
-                new SelectionPrompt<Book>()
+            var choices = books
+                .Select((item, index) => new { Book = item, Choice = $"{item.Title} — {item.Author} ({index + 1})" })
+                .ToDictionary(item => item.Choice, item => item.Book);
+            const string backChoice = "Tillbaka";
+            choices.Add(backChoice, null!);
+
+            var choice = AnsiConsole.Prompt(
+                new SelectionPrompt<string>()
                     .Title(title)
-                    .AddChoices(books)
-                    .UseConverter(book => book.Title)
+                    .AddChoices(choices.Keys)
             );
+            return choice == backChoice ? null : choices[choice];
         }
 
         // Denna metoden visar menyn tills användaren väljer att logga ut.
@@ -77,6 +85,9 @@ namespace BokstuganApp.UI
                                 var table = new Table();
 
                                 table.AddColumn("Boktitel");
+                                table.AddColumn("Lånad under namn");
+                                table.AddColumn("Lånetid");
+                                table.AddColumn("Lånad från");
                                 table.AddColumn("Förfallodatum");
                                 table.AddColumn("Status");
 
@@ -90,6 +101,9 @@ namespace BokstuganApp.UI
 
                                     table.AddRow(
                                         Markup.Escape(title),
+                                        Markup.Escape(loan.Borrower),
+                                        (loan.DueDate.Date - loan.LoanDate.Date).Days + " dagar",
+                                        loan.LoanDate.ToString("yyyy-MM-dd"),
                                         loan.DueDate.ToString("yyyy-MM-dd"),
                                         status
                                     );
@@ -103,42 +117,27 @@ namespace BokstuganApp.UI
                         }
 
                     case MenuChoice.AllBooks:
-                        new BookTable().Show(_bookManager.GetAllBooks());
-                        ConsoleMessages.WaitForKey();
+                        BrowseBooks();
                         break;
 
-                    case MenuChoice.LoanBook:
+                    case MenuChoice.RandomBook:
+                    {
+                        var books = _bookManager.GetAllBooks()
+                            .Where(book => !_loanManager.IsLoaned(book.ISBN))
+                            .ToList();
+                        if (books.Count == 0)
                         {
-                            var availableBooks = _bookManager.GetAllBooks()
-                                .Where(b => !_loanManager.IsLoaned(b.ISBN))
-                                .ToList();
-
-                            if (availableBooks.Count == 0)
-                            {
-                                ConsoleMessages.Warning("Det finns inga lediga böcker.");
-                            }
-                            else
-                            {
-                                var book = ChooseBook("Vilken bok vill du låna?", availableBooks);
-
-                                try
-                                {
-                                    var loan = _loanManager.LoanBook(book, _userName);
-
-                                    ConsoleMessages.Success(
-                                        "Du har lånat " + book.Title +
-                                        "! Förfallodatum: " +
-                                        loan.DueDate.ToString("yyyy-MM-dd"));
-                                }
-                                catch (ArgumentException ex)
-                                {
-                                    ConsoleMessages.Error(ex.Message);
-                                }
-                            }
-
+                            ConsoleMessages.Warning("Det finns inga tillgängliga böcker att välja mellan.");
                             ConsoleMessages.WaitForKey();
                             break;
                         }
+
+                        var selectedBook = Random.Shared.GetItems(books.ToArray(), 1)[0];
+                        AnsiConsole.Clear();
+                        AnsiConsole.MarkupLine("[aqua]Ditt slumpmässiga boktips:[/]");
+                        ShowBookDetails(selectedBook);
+                        break;
+                    }
 
                     case MenuChoice.Search:
                     {
@@ -170,14 +169,21 @@ namespace BokstuganApp.UI
                             }
                             else
                             {
-                                var loan = AnsiConsole.Prompt(
-                                    new SelectionPrompt<Loan>()
-
+                                var loanChoices = activeLoans
+                                    .Select((item, index) => new
+                                    {
+                                        Loan = item,
+                                        Choice = $"{TitleFor(item.Isbn)} (förfaller {item.DueDate:yyyy-MM-dd}) ({index + 1})"
+                                    })
+                                    .ToDictionary(item => item.Choice, item => item.Loan);
+                                const string backChoice = "Tillbaka till menyn";
+                                loanChoices.Add(backChoice, null!);
+                                var loanChoice = AnsiConsole.Prompt(
+                                    new SelectionPrompt<string>()
                                         .Title("[yellow]Vilken bok vill du lämna in?[/]")
-                                        .AddChoices(activeLoans)
-                                        .UseConverter(l => Markup.Escape(
-                                            l.Isbn + " (förfaller " +
-                                            l.DueDate.ToString("yyyy-MM-dd") + ")")));
+                                        .AddChoices(loanChoices.Keys));
+                                if (loanChoice == backChoice) break;
+                                var loan = loanChoices[loanChoice];
 
                                 bool wasLate = loan.IsOverdue;
 
@@ -219,6 +225,7 @@ namespace BokstuganApp.UI
                             else
                             {
                                 var book = ChooseBook("Vilken bok vill du recensera?", borrowedBooks);
+                                if (book == null) break;
                                 int rating = InputHelper.AskInt("Betyg (1-5)", 1, 5);
                                 string comment = InputHelper.AskText("Kommentar");
 
@@ -242,11 +249,45 @@ namespace BokstuganApp.UI
                         running = false;
                         break;
 
+                    case MenuChoice.Ticket:
+                        SubmitTicket();
+                        break;
+
                    
                 }
 
             }
 
+        }
+
+        private void SubmitTicket()
+        {
+            const string sendChoice = "Skicka en ticket";
+            const string backChoice = "Tillbaka till menyn";
+
+            var choice = AnsiConsole.Prompt(
+                new SelectionPrompt<string>()
+                    .Title("[yellow]Ticket[/]")
+                    .HighlightStyle(new Style(Color.Aqua))
+                    .AddChoices(sendChoice, backChoice));
+
+            if (choice == backChoice)
+            {
+                return;
+            }
+
+            string message = InputHelper.AskText("Beskriv felet eller önskad bok");
+            var tickets = _ticketStore.GetAll();
+            _ticketStore.AddItem(new Ticket
+            {
+                Id = tickets.Count == 0 ? 1 : tickets.Max(ticket => ticket.Id) + 1,
+                UserName = _userName,
+                Message = message.Trim(),
+                CreatedAt = DateTime.Now
+            });
+            _ticketStore.SaveToJson();
+            ConsoleMessages.Success("Din ticket har skickats till admin.");
+            ConsoleMessages.WaitForKey();
         }
 
         private static Book book(string title, List<Book> books)
@@ -256,6 +297,92 @@ namespace BokstuganApp.UI
                     .Title("[yellow]" + title + "[/]")
                     .AddChoices(books)
                     .UseConverter(b => Markup.Escape(b.Title + " (" + b.Author + ")")));
+        }
+
+        private void BrowseBooks()
+        {
+            var books = _bookManager.GetAllBooks();
+            if (books.Count == 0)
+            {
+                ConsoleMessages.Warning("Det finns inga böcker att visa.");
+                ConsoleMessages.WaitForKey();
+                return;
+            }
+
+            var bookChoices = books
+                .Select((item, index) => new { Book = item, Choice = $"{item.Title} — {item.Author} ({index + 1})" })
+                .ToDictionary(item => item.Choice, item => item.Book);
+            bookChoices.Add("Tillbaka till menyn", null!);
+
+            bool browsing = true;
+            while (browsing)
+            {
+                AnsiConsole.Clear();
+                AnsiConsole.Write(new Rule("[aqua]Alla böcker[/]").LeftJustified());
+                new StatisticsView().ShowBooksPerGenre(books);
+
+                var choice = AnsiConsole.Prompt(
+                    new SelectionPrompt<string>()
+                        .Title("Välj en bok för att läsa mer:")
+                        .AddChoices(bookChoices.Keys));
+
+                if (choice == "Tillbaka till menyn")
+                {
+                    browsing = false;
+                    continue;
+                }
+
+                var selectedBook = bookChoices[choice];
+                var action = ShowBookDetails(selectedBook);
+                if (action == BookDetailsAction.BackToMenu)
+                    browsing = false;
+            }
+        }
+
+        private BookDetailsAction ShowBookDetails(Book selectedBook)
+        {
+            bool isAvailable = !_loanManager.IsLoaned(selectedBook.ISBN);
+            new BookDetailView().Show(selectedBook, _reviewManager.GetLatestReviewsForBook(selectedBook.ISBN));
+            AnsiConsole.MarkupLine(isAvailable
+                ? "[green]Boken är tillgänglig.[/]"
+                : "[red]Boken är utlånad just nu.[/]");
+
+            var actions = new List<BookDetailsAction>();
+            if (isAvailable)
+                actions.Add(BookDetailsAction.Loan);
+            actions.Add(BookDetailsAction.BackToBooks);
+            actions.Add(BookDetailsAction.BackToMenu);
+
+            var action = AnsiConsole.Prompt(
+                new SelectionPrompt<BookDetailsAction>()
+                    .Title("Vad vill du göra?")
+                    .AddChoices(actions)
+                    .UseConverter(item => item switch
+                    {
+                        BookDetailsAction.Loan => "Låna boken",
+                        BookDetailsAction.BackToBooks => "Tillbaka till alla böcker",
+                        _ => "Tillbaka till menyn"
+                    }));
+
+            if (action == BookDetailsAction.Loan)
+            {
+                try
+                {
+                    var loan = _loanManager.LoanBook(selectedBook, _userName);
+                    ConsoleMessages.Success(
+                        $"Du har lånat {selectedBook.Title} under namnet {loan.Borrower}. " +
+                        $"Lånetid: {LoanManager.LoanDays} dagar. Förfallodatum: {loan.DueDate:yyyy-MM-dd}");
+                    ConsoleMessages.WaitForKey();
+                }
+                catch (ArgumentException ex)
+                {
+                    ConsoleMessages.Error(ex.Message);
+                    ConsoleMessages.WaitForKey();
+                }
+                return BookDetailsAction.BackToBooks;
+            }
+
+            return action;
         }
 
         // Hittar titeln utifrån ISBN, annars visas ISBN
