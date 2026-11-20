@@ -5,6 +5,7 @@ namespace BokstuganApp.Classes
     // En lånehändelse: vem har lånat vilken bok, och när den ska tillbaka
     public class Loan
     {
+        // Attributer för denna klasen och för lån
         public string Isbn { get; set; } = "";
         public string Borrower { get; set; } = "";
         public DateTime LoanDate { get; set; }

@@ -9,6 +9,7 @@ namespace BokstuganApp.Services
     // Hanterar lån: låna ut, lämna in och söka bland lån
     public class LoanManager
     {
+        // Attributer 
         public const int LoanDays = 14;
         public const int MaxLoansPerUser = 3;
 

@@ -6,7 +6,7 @@ using System.Text;
 namespace BokstuganApp.Classes
 {
 
-    // Attributen  gör det möjligt att serialisera och deserialisera objekt av denna klass, vilket är användbart för att spara och läsa data från filer.
+    // Attributen gör det möjligt att serialisera och deserialisera objekt av denna klass, vilket är användbart för att spara och läsa data från filer.
     public class Book
     {
         public string Title { get; set; }

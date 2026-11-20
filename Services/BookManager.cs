@@ -13,6 +13,8 @@ public class BookManager
     // Lagringen som håller böckerna och sparar/läser dem från JSON.
     // All data ligger här. Klassen har ingen egen lista.
     private readonly DataStore<Book> bookStore;
+
+    // Konstruktör för klassen "BookManager"
     public BookManager(DataStore<Book> bookStore)
     {
         this.bookStore = bookStore;
@@ -25,6 +27,8 @@ public class BookManager
         // Kontrollerar både ID och ISBN så en bok inte läggs in två gånger.
         var books = this.bookStore.GetAll();
         bool addedSeedBooks = false;
+
+       // "foreach" används här för att kunna se och användas ab böckernas id/ISBN
         foreach (var seedBook in LibraryMenuHelper.GetDemoBooks())
         {
             if (books.Any(book => book.Id == seedBook.Id || book.ISBN == seedBook.ISBN))
