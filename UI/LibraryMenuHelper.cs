@@ -22,14 +22,16 @@ namespace BokstuganApp.UI
                         return "Visa mina böcker";
                     case MenuChoice.AllBooks:
                         return "Visa alla böcker";
+                    case MenuChoice.RandomBook:
+                        return "Slumpmässig bok";
                     case MenuChoice.ReturnBook:
                         return "Lämna in bok";
                     case MenuChoice.Search:
                         return "Sök efter bok";
                     case MenuChoice.Review:
                         return "Lämna recension";
-                    case MenuChoice.LoanBook:
-                        return "Låna bok";
+                    case MenuChoice.Ticket:
+                        return "Ticket";
                 default:
                         return "Logga ut";
                 }
@@ -41,9 +43,9 @@ namespace BokstuganApp.UI
             {
                 return new List<Book>
                 {
-                    new Book("Art of war", "Szu Tzu", "Facklitteratur", 1910, "90000001" ),
-                    new Book("Omgivna av idioter", "Thomas Erikson", "Populärpsykologi", 2014, "90000002"),
-                    new Book("The Hungry Game", "Suzanne Collins", "Dystopi", 2008, "90000003")
+                    new Book("Art of war", "Szu Tzu", "Facklitteratur", 1910, "90000001") { Id = 90000001 },
+                    new Book("Omgivna av idioter", "Thomas Erikson", "Populärpsykologi", 2014, "90000002") { Id = 90000002 },
+                    new Book("The Hungry Game", "Suzanne Collins", "Dystopi", 2008, "90000003") { Id = 90000003 }
 
 
                 };

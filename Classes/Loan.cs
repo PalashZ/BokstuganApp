@@ -1,33 +1,26 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Text.Json.Serialization;
 
 namespace BokstuganApp.Classes
 {
-    namespace BokstuganApp.Classes
+    // En lånehändelse: vem har lånat vilken bok, och när den ska tillbaka
+    public class Loan
     {
-        // En lånehändelse: vem har lånat vilken bok, och när den ska tillbaka
-        public class Loan
+        public string Isbn { get; set; } = "";
+        public string Borrower { get; set; } = "";
+        public DateTime LoanDate { get; set; }
+        public DateTime DueDate { get; set; }
+        public DateTime? ReturnDate { get; set; }
+
+        // Sant så länge boken inte är återlämnad
+        public bool IsActive
         {
-            public static object Loan_Books { get; internal set; }
-            public string Isbn { get; set; } = "";
-            public string Borrower { get; set; } = "";
-            public DateTime LoanDate { get; set; }
-            public DateTime DueDate { get; set; }
-            public DateTime? ReturnDate { get; set; }
+            get { return ReturnDate == null; }
+        }
 
-            // Sant så länge boken inte är återlämnad
-            public bool IsActive
-            {
-                get { return ReturnDate == null; }
-            }
-
-            // Sant om lånet är aktivt och förfallodatumet har passerat
-            public bool IsOverdue
-            {
-                get { return IsActive && DateTime.Now.Date > DueDate.Date; }
-            }
+        // Sant om lånet är aktivt och förfallodatumet har passerat
+        public bool IsOverdue
+        {
+            get { return IsActive && DateTime.Now.Date > DueDate.Date; }
         }
     }
 }

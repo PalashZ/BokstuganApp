@@ -22,6 +22,23 @@ namespace BokstuganApp.UI
                         ? ValidationResult.Error("[red]Fältet kan inte vara tomt.[/]")
                         : ValidationResult.Success()));
         }
+        // Användarnamn ska innehålla minst tre bokstäver och bara bokstäver eller siffror.
+        public static string AskUserName(string prompt)
+        {
+            string name = AnsiConsole.Prompt(
+                new TextPrompt<string>($"{prompt}:")
+                    .Validate(text =>
+                    {
+                        string name = text.Trim();
+                        if (!name.All(character => char.IsLetter(character) || char.IsDigit(character)))
+                            return ValidationResult.Error("[red]Användarnamnet får bara innehålla bokstäver och siffror.[/]");
+                        if (name.Count(char.IsLetter) < 3)
+                            return ValidationResult.Error("[red]Användarnamnet måste innehålla minst 3 bokstäver.[/]");
+                        return ValidationResult.Success();
+                    }));
+            return name.Trim();
+        }
+
         // Frågar användaren om ett heltal inom ett visst intervall och returnerar det.
         public static int AskInt(string prompt, int min, int max)
         {

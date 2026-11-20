@@ -17,17 +17,25 @@ namespace BokstuganApp.UI
                 ConsoleMessages.Warning("Det finns inga böcker att räkna.");
                 return;
             }
-            // Skapar en tabell med kolumner för genre och antal böcker.
+            var colors = new[]
+            {
+                Color.Aqua, Color.Green, Color.Yellow, Color.Fuchsia,
+                Color.Blue, Color.Red, Color.Lime, Color.Teal
+            };
+
             var chart = new BarChart();
             chart.Width = 60;
             chart.Label = "[bold]Böcker per genre[/]";
 
-            // Grupperar böckerna per genre och räknar hur många som finns i varje
-            var groups = books.GroupBy(book => book.Genre);
+            var groups = books
+                .GroupBy(book => string.IsNullOrWhiteSpace(book.Genre) ? "Okänd genre" : book.Genre.Trim())
+                .OrderBy(group => group.Key)
+                .ToList();
 
-            foreach (var group in groups)
+            for (int index = 0; index < groups.Count; index++)
             {
-                chart.AddItem(group.Key, group.Count(), Color.Aqua);
+                var group = groups[index];
+                chart.AddItem(Markup.Escape(group.Key), group.Count(), colors[index % colors.Length]);
             }
 
             AnsiConsole.Write(chart);

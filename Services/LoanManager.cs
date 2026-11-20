@@ -1,8 +1,8 @@
-﻿using System;
+﻿
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using BokstuganApp.Classes;
-using BokstuganApp.Classes.BokstuganApp.Classes;
 
 namespace BokstuganApp.Services
 {
@@ -12,7 +12,15 @@ namespace BokstuganApp.Services
         public const int LoanDays = 14;
         public const int MaxLoansPerUser = 3;
 
-        private readonly List<Loan> _loans = new List<Loan>();
+        private readonly DataStore<Loan> _loanStore;
+        private readonly List<Loan> _loans;
+
+        public LoanManager(DataStore<Loan> loanStore)
+        {
+            _loanStore = loanStore;
+            _loanStore.LoadFromJson();
+            _loans = _loanStore.GetAll();
+        }
 
         // Lånar ut en bok om den är ledig och användaren inte har för många lån
         public Loan LoanBook(Book book, string borrower)
@@ -47,6 +55,8 @@ namespace BokstuganApp.Services
             };
 
             _loans.Add(loan);
+            _loanStore.SaveToJson(_loans);
+
             return loan;
         }
 
@@ -64,6 +74,8 @@ namespace BokstuganApp.Services
             }
 
             loan.ReturnDate = DateTime.Now;
+            _loanStore.SaveToJson(_loans);
+
             return loan;
         }
 
@@ -71,6 +83,12 @@ namespace BokstuganApp.Services
         public bool IsLoaned(string isbn)
         {
             return _loans.Any(l => l.IsActive && l.Isbn == isbn);
+        }
+
+        // Pågående lån för en viss bok, eller null om boken är ledig
+        public Loan? GetActiveLoansForBook(string isbn)
+        {
+            return _loans.FirstOrDefault(l => l.IsActive && l.Isbn == isbn);
         }
 
         // Användarens pågående lån
@@ -83,6 +101,12 @@ namespace BokstuganApp.Services
         }
 
         // Sant om användaren någon gång har lånat boken (även om den lämnats in)
+        public void RemoveLoansForUser(string borrower)
+        {
+            _loans.RemoveAll(loan => loan.Borrower.Equals(borrower, StringComparison.OrdinalIgnoreCase));
+            _loanStore.SaveToJson(_loans);
+        }
+
         public bool HasBorrowed(string isbn, string borrower)
         {
             return _loans.Any(l =>
