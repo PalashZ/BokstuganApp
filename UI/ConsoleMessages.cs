@@ -35,7 +35,7 @@ namespace BokstuganApp.UI
             AnsiConsole.MarkupLine($"[grey]{Markup.Escape(text)}[/]");
         }
         
-
+        // Metod för att användare ska trycka på vilken tangetbord-knapp som helst
         public static void WaitForKey()
         {
             AnsiConsole.WriteLine();

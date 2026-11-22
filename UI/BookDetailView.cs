@@ -30,6 +30,9 @@ namespace BokstuganApp.UI
             panel.Padding = new Padding(1, 1);
             AnsiConsole.Write(panel);
 
+
+            // Gör om recensionerna till en lista som bi kan räkna och loopa igenom
+
             var latestReviews = reviews.ToList();
             AnsiConsole.WriteLine();
             AnsiConsole.Write(new Rule("[aqua]De tre senaste recensionerna[/]").LeftJustified());
@@ -39,7 +42,7 @@ namespace BokstuganApp.UI
                 AnsiConsole.MarkupLine("[grey]Den här boken har inga recensioner ännu.[/]");
                 return;
             }
-
+            // Bygger texten: betyg, namn och datum överst, sedan kommentaren. Escape skyddar mot hakparenteser
             foreach (var review in latestReviews)
             {
                 var reviewText = new Markup(

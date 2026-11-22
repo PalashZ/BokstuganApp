@@ -5,17 +5,23 @@ using BokstuganApp.Classes;
 using BokstuganApp.Services;
 using Spectre.Console;
 
+// Detta klassen handlar om hur admin UI ser ut, vilka funktioner och val i meny dom kan använda sig
+
 namespace BokstuganApp.UI;
 
+// Enum för att veta vad som händer
 public enum AdminChoice { ShowAll, Statistics, ShowTickets, ShowUsers, AddBook, EditBook, RemoveBook, RemoveUser, LogOut }
 
 public class AdminMenu
 {
+    // Klassen attributer som andvänds av "readonly"
+    // "readonly" används för bara ge värde i konstruktören
     private readonly BookManager _bookManager;
     private readonly LoanManager _loanManager;
     private readonly DataStore<User> _userStore;
     private readonly DataStore<Ticket> _ticketStore;
 
+    // Konstruktör för klassen "LibraryMenyAdmin"
     public AdminMenu(BookManager bookManager, LoanManager loanManager, DataStore<User> userStore, DataStore<Ticket> ticketStore)
     {
         _bookManager = bookManager;
@@ -23,7 +29,8 @@ public class AdminMenu
         _userStore = userStore;
         _ticketStore = ticketStore;
     }
-
+    // Denna metoden för att menu ska kunna funka och det ska inte vara något problem med flödet
+    // Visar adminmenyn och kör valet tills admin loggar ut
     public void ShowMenu()
     {
         bool running = true;
@@ -32,6 +39,8 @@ public class AdminMenu
             AnsiConsole.Clear();
             AnsiConsole.Write(new Rule("[aqua]Adminmeny[/]").LeftJustified());
             AnsiConsole.WriteLine();
+
+            // Visar en pilmeny med alla adminval och översätter dem till svensk text
             var choice = AnsiConsole.Prompt(
                 new SelectionPrompt<AdminChoice>()
                     .Title("[yellow]Vad vill du göra?[/]")
@@ -39,6 +48,7 @@ public class AdminMenu
                     .AddChoices(Enum.GetValues<AdminChoice>())
                     .UseConverter(ToText));
 
+            // Anropar rätt metod beroende på vad admin valde
             switch (choice)
             {
                 case AdminChoice.ShowAll: ShowAllBooks(); break;
@@ -54,16 +64,19 @@ public class AdminMenu
         }
     }
 
+    // Visar statistik över antal böcker per genre
     private void ShowStatistics()
     {
         new StatisticsView().ShowBooksPerGenre(_bookManager.GetAllBooks());
         ConsoleMessages.WaitForKey();
     }
 
+    // Visar inkoma tickets och låter admin öppna eller ta bort dem
     private void ShowTickets()
     {
         const string back = "Tillbaka till adminmenyn";
 
+        // Upprepas så att admin kan hantera flera tickets i rad
         while (true)
         {
             var tickets = _ticketStore.GetAll().OrderByDescending(ticket => ticket.CreatedAt).ToList();
@@ -89,6 +102,7 @@ public class AdminMenu
             if (selected == back)
                 return;
 
+            // Hämtar tickten som tillhör valet
             var ticket = choices[selected];
             AnsiConsole.Write(new Panel(
                     $"[bold]Från:[/] {Markup.Escape(ticket.UserName)}\n" +
@@ -99,6 +113,7 @@ public class AdminMenu
                 .BorderColor(Color.Aqua)
                 .Padding(1, 1));
 
+            // Frågar om admin vill ta bort tickten eller gå tillbaka till listan
             string action = AnsiConsole.Prompt(new SelectionPrompt<string>()
                 .Title("Vad vill du göra?")
                 .AddChoices("Ta bort ticket", "Tillbaka till ticketlistan"));
@@ -112,6 +127,7 @@ public class AdminMenu
         }
     }
 
+    // Visar alla böcker med vem som lånat dem, låter admin avsluta ett lån
     private void ShowAllBooks()
     {
         var books = _bookManager.GetAllBooks();
@@ -121,6 +137,8 @@ public class AdminMenu
             ConsoleMessages.WaitForKey();
             return;
         }
+
+        // Skapar tabllen med kolumner för bok, författare, vem som lånat och förfalldatum
 
         var table = new Table().AddColumn("Bok").AddColumn("Författare").AddColumn("Lånad av").AddColumn("Förfallodatum");
         foreach (var book in books)
@@ -135,6 +153,8 @@ public class AdminMenu
         AnsiConsole.Write(table);
         AnsiConsole.WriteLine();
         new StatisticsView().ShowBooksPerGenre(books);
+
+        // Samlar de böcker som är utlånad just nu tillsamans med sitt lån
 
         var activeLoans = books
             .Select(book => new { Book = book, Loan = _loanManager.GetActiveLoansForBook(book.ISBN) })
@@ -169,6 +189,7 @@ public class AdminMenu
         }
     }
 
+    // Visar alla registerade användare och hur måmga aktiva lån var och en har
     private void ShowUsers()
     {
         var users = _userStore.GetAll().OrderBy(user => user.Name, StringComparer.OrdinalIgnoreCase).ToList();
@@ -184,6 +205,7 @@ public class AdminMenu
         ConsoleMessages.WaitForKey();
     }
 
+    // Detta låter så att admin kan välja en användare och ta bort den
     private void RemoveUser()
     {
         var users = _userStore.GetAll().OrderBy(user => user.Name, StringComparer.OrdinalIgnoreCase).ToList();
@@ -194,6 +216,7 @@ public class AdminMenu
             return;
         }
 
+        // Skapar valen i meny, användarenamn och ett numer som gör varje val unikt
         var choices = users.Select((user, index) => new { User = user, Choice = $"{user.Name} ({index + 1})" })
             .ToDictionary(item => item.Choice, item => item.User);
         const string back = "Tillbaka till adminmenyn";
@@ -208,6 +231,8 @@ public class AdminMenu
         if (!InputHelper.Confirm($"Ta bort {selectedUser.Name} och radera användarens lånehistorik? Aktiva lån: {activeLoanCount}."))
             return;
 
+        // Tar bort användarens lån först, så att inga lån pekar på en användare som saknas
+
         _loanManager.RemoveLoansForUser(selectedUser.Name);
         _userStore.RemoveItem(selectedUser);
         _userStore.SaveToJson();
@@ -215,6 +240,7 @@ public class AdminMenu
         ConsoleMessages.WaitForKey();
     }
 
+    // Frågar efte bokens uppgifter och lägger till boken som man ange
     private void AddBook()
     {
         var action = AnsiConsole.Prompt(new SelectionPrompt<string>()
@@ -227,6 +253,8 @@ public class AdminMenu
         string genre = InputHelper.AskText("Genre");
         int year = InputHelper.AskInt("År", 1000, DateTime.Now.Year);
         string isbn = InputHelper.AskText("ISBN");
+
+        // Försöker lägga till boken och fångar regelfel
         try
         {
             _bookManager.AddBook(new Book(title, author, genre, year, isbn));
@@ -236,6 +264,7 @@ public class AdminMenu
         ConsoleMessages.WaitForKey();
     }
 
+    // Låter admin välja en bok och skriva in nya värden
     private void EditBook()
     {
         Book? book = ChooseBook("Vilken bok vill du ändra?");
@@ -254,6 +283,7 @@ public class AdminMenu
         ConsoleMessages.WaitForKey();
     }
 
+    // Låter admin välja en bok och ta bort den efter en bekräftelse
     private void RemoveBook()
     {
         Book? book = ChooseBook("Vilken bok vill du ta bort?");
@@ -263,6 +293,8 @@ public class AdminMenu
         ConsoleMessages.WaitForKey();
     }
 
+    // Visar en pilmeny med alla böcker om hur det funkar
+    // Ger null om admin går tillbaka elelr om det inte finns några böcker
     private Book? ChooseBook(string title)
     {
         var books = _bookManager.GetAllBooks();
@@ -281,6 +313,7 @@ public class AdminMenu
         return choice == back ? null : choices[choice];
     }
 
+    // Översätter ett adminval till den svenska texten som visas i menyn
     private static string ToText(AdminChoice choice) => choice switch
     {
         AdminChoice.ShowAll => "Visa alla böcker",
