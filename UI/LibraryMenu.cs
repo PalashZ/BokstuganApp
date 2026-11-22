@@ -14,7 +14,11 @@ namespace BokstuganApp.UI
 {
     // Enum som representerar de olika valen i menyn.
     // Varje värde motsvarar en funktion som användaren kan välja.
-    public enum MenuChoice { MyBooks, AllBooks, RandomBook, ReturnBook, Search, Review, Ticket, LogOut }
+   public enum MenuChoice
+{
+    MyBooks, AllBooks, RandomBook, ReturnBook,
+    Search, Review, Ticket, Reading, LogOut
+}
     public enum BookDetailsAction { Loan, BackToBooks, BackToMenu }
 
     // Denna klassen är hur meny funkar för våran program.
@@ -25,7 +29,7 @@ namespace BokstuganApp.UI
         private readonly ReviewManager _reviewManager;
         private readonly string _userName;
         private readonly DataStore<Ticket> _ticketStore;
-
+        private readonly ReadingStatusManager _readingStatusManager;
         public LibraryMenu(BookManager bookManager, LoanManager loanManager, ReviewManager reviewManager, string userName, DataStore<Ticket> ticketStore)
         {
             _bookManager = bookManager;
@@ -33,6 +37,8 @@ namespace BokstuganApp.UI
             _reviewManager = reviewManager;
             _userName = userName;
             _ticketStore = ticketStore;
+            _readingStatusManager = new ReadingStatusManager(
+    new DataStore<UserReadingStatus>("reading-status.json"));
         }
 
         private Book? ChooseBook(string title, List<Book> books)
@@ -164,7 +170,7 @@ namespace BokstuganApp.UI
 
                     }
 
-                        // Låter användaren lämna in en av sina lånade böcker 
+                        // Låter användaren lämna in en av sina lånade böcker
                     case MenuChoice.ReturnBook:
                         {
                             var activeLoans = _loanManager.GetActiveLoansForUser(_userName);
@@ -259,7 +265,50 @@ namespace BokstuganApp.UI
                             ConsoleMessages.WaitForKey();
                             break;
                         }
+case MenuChoice.Reading:
+{
+    var books = _bookManager.GetAllBooks();
 
+    if (books.Count == 0)
+    {
+        ConsoleMessages.Warning("Det finns inga böcker.");
+        ConsoleMessages.WaitForKey();
+        break;
+    }
+
+    var selectedBook = ChooseBook("Välj bok för lässtatus:", books);
+    if (selectedBook == null)
+    {
+        break;
+    }
+
+    var currentStatus = _readingStatusManager.GetStatus(
+        _userName, selectedBook.ISBN);
+
+    Console.WriteLine(
+        $"Din lässtatus för {selectedBook.Title}: {currentStatus}");
+
+    string action = AnsiConsole.Prompt(
+        new SelectionPrompt<string>()
+            .Title("Vad vill du göra?")
+            .AddChoices("Markera som läst", "Markera som oläst", "Tillbaka"));
+
+    if (action == "Tillbaka")
+    {
+        break;
+    }
+
+    var status = action == "Markera som läst"
+        ? ReadingStatus.Läst
+        : ReadingStatus.Oläst;
+
+    _readingStatusManager.SetStatus(
+        _userName, selectedBook.ISBN, status);
+
+    ConsoleMessages.Success("Lässtatusen har sparats.");
+    ConsoleMessages.WaitForKey();
+    break;
+}
                         // Avslutar menyloopen så att användaren kommer tillbaka till rollvalet
                     case MenuChoice.LogOut:
                         running = false;
@@ -270,7 +319,7 @@ namespace BokstuganApp.UI
                         SubmitTicket();
                         break;
 
-                   
+
                 }
 
             }

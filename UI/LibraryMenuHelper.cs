@@ -17,6 +17,7 @@ public static class LibraryMenuHelper
             MenuChoice.Search => "Sök efter bok",
             MenuChoice.Review => "Lämna recension",
             MenuChoice.Ticket => "Ticket",
+            MenuChoice.Reading => "Lässtatus",
             _ => "Logga ut"
         };
     }
