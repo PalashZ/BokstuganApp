@@ -8,9 +8,9 @@ BokstuganApp är ett grupprojekt som går ut på att skapa ett digitalt bibliote
 <img width="568" height="300" alt="Screenshot 2026-11-21 020007" src="https://github.com/user-attachments/assets/e7367675-5042-4979-bd0a-f81dd0b930f4" />
 
 ## Krav för att köra programmet
-- .NET SDK (version 8 eller senare)
-- Visual Studio Code, Visual Studio or any terminal
-- Git Bash
+- .NET 10 SDK (`net10.0`)
+- En terminal, till exempel PowerShell. Git Bash är valfritt.
+- Visual Studio eller Visual Studio Code är valfritt.
 - OBS! Lösenord behövs till rollen "Admin"
 - Lösenord: nbi
 
@@ -24,6 +24,12 @@ BokstuganApp är ett grupprojekt som går ut på att skapa ett digitalt bibliote
 5. Välj ett av alternativen i programmet.
 
 ### Alternativ 2: Terminal
-1. Öppna terminalen i projektmappen och välj BokstuganApp.csproj.
-2. Kör programmet.
-3. Välj ett av alternativen i programmet.
+Öppna PowerShell i projektmappen där `BokstuganApp.csproj` ligger. Kör kommandona ett i taget:
+
+```powershell
+dotnet restore
+dotnet build
+dotnet run
+```
+
+När programmet startar väljer du ett alternativ i menyn.
